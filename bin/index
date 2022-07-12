@@ -1,0 +1,103 @@
+#!/bin/bash
+set -Eeuo pipefail
+set -x
+#Set FLASK_ENV and FLASK_APP environment variables
+export FLASK_ENV=development
+export FLASK_APP=index
+
+start_function () {  
+    # appends stdout and stderr to a log file.
+    # The >> var/log/index.log 2&1 # Type Control-C to stop watching the log.
+    # mkdir -p var/log
+    # rm -f var/log/index.log
+    if [ pgrep -f "flask run --host 0.0.0.0 --port 9000" ]
+    then
+        echo "Error: index server is already running"
+    else
+        FLASK_APP=index INDEX_PATH="inverted_index_0.txt" flask run --host 0.0.0.0 --port 9000 #>> var/log/index.log 2>&1 &
+    fi
+
+    if [ pgrep -f "flask run --host 0.0.0.0 --port 9001" ]
+    then
+        echo "Error: index server is already running"
+    else
+        FLASK_APP=index INDEX_PATH="inverted_index_1.txt" flask run --host 0.0.0.0 --port 9001 #>> var/log/index.log 2>&1 &
+    fi
+
+    if [ pgrep -f "flask run --host 0.0.0.0 --port 9002" ]
+    then
+        echo "Error: index server is already running"
+    else
+        FLASK_APP=index INDEX_PATH="inverted_index_2.txt" flask run --host 0.0.0.0 --port 9002 #>> var/log/index.log 2>&1 &
+    fi
+}
+
+stop_function () {
+    # Prints everything in the database
+    echo stopping index server ...
+    pkill -f "flask run --host 0.0.0.0 --port 9000" || true
+    pkill -f "flask run --host 0.0.0.0 --port 9001" || true
+    pkill -f "flask run --host 0.0.0.0 --port 9002" || true
+}
+
+status_function () {
+    set +o pipefail
+    NPROCS=$(pgrep -f "flask run --host 0.0.0.0 --port 900[0-2]" | wc -l)
+    set -o pipefail
+    if [ "$NPROCS" -eq 3 ]; then
+        echo "index server running"
+        exit 0
+    elif [ "$NPROCS" -eq 0 ]; then
+        echo "index server stopped"
+        exit 1
+    else
+        echo "index server error: found ${NPROCS} processes, expected 3"
+        exit 2
+    fi
+
+}
+
+
+
+# for different scrip options
+if [ $# -ne 1 ]; then
+  echo "No command option"
+  exit 1
+fi
+# Parse argument.  $1 is the first argument
+# Calling the script without arguments displays a usage message.
+case $1 in
+
+
+
+# ETHAN DOES THIS PART
+  "start")
+    start_function
+    ;;
+
+# The destroy argument removes the database. You might also
+#   want to remove user-created files like an uploads/ directory.
+# NICK DOES THIS PART
+  "stop")
+    stop_function
+    ;;
+
+# The reset argument does the same thing as destroy followed by create.
+# ETHAN DOES THIS PART
+  "restart")
+    stop_function
+    start_function
+    ;;
+
+# The dump argument prints everything in the database. The exact format is up
+#   to you. Note to EECS 485 students: the autograder will only check for the 
+#   right data in the output, not the format.
+# NICK DOES THIS PART
+  "status")
+    status_function
+    ;;
+  *)
+    usage
+    exit 1
+    ;;
+esac

@@ -1,0 +1,9 @@
+Flask
+bs4
+html5validator
+pycodestyle
+pydocstyle
+pylint
+pytest
+pytest-mock
+requests
